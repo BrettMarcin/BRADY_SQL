@@ -1,0 +1,3 @@
+src/sql/build_files
+.idea/
+cmake-build-debug/
