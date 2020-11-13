@@ -21,11 +21,12 @@ public:
     std::string tempString;
     void scan_begin();
     void scan_end ();
-    int parse(const std::string& f);
+    int parse(char* stringInput);
     yy::location location;
     std::string file;
     std::string queryStmt;
     int res;
+    char* stringInput;
 };
 
 // Give Flex the prototype of yylex we want ...

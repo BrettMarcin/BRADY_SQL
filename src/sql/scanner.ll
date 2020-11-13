@@ -22,7 +22,6 @@
 
 int     ([0-9])+
 alpha       ([a-zA-Z])+
-blank [ \t\r]
 
 %{
   // Code run each time a pattern is matched.
@@ -37,7 +36,6 @@ blank [ \t\r]
   loc.step ();
 %}
 
-{blank}+   loc.step ();
 \n+        loc.lines (yyleng); loc.step ();
 "(" return yy::parser::make_LPAREN(loc);
 ")" return yy::parser::make_RPAREN(loc);
@@ -65,17 +63,11 @@ make_NUM (const std::string &s, const yy::parser::location_type& loc)
 void
 Driver::scan_begin ()
 {
-  if (file.empty () || file == "-")
-    yyin = stdin;
-  else if (!(yyin = fopen (file.c_str (), "r")))
-    {
-      std::cerr << "cannot open " << file << ": " << strerror (errno) << '\n';
-      exit (EXIT_FAILURE);
-    }
+  yy_scan_string(stringInput);
 }
 
 void
 Driver::scan_end ()
 {
-  fclose (yyin);
+  yy_delete_buffer(YY_CURRENT_BUFFER);
 }

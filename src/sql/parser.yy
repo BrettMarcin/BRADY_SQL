@@ -1,127 +1,102 @@
-%{
-    #include <stdio.h>
-    void yyerror(const char* msg) {
-        printf("error!");
-      fprintf(stderr, "%s\n", msg);
-   }
-   int yylex();
-    // #include "include/sql/Expression.h"
+%skeleton "lalr1.cc"
+%require "3.4"
+%defines
+%define api.token.raw
+%define api.token.constructor
+%define api.value.type variant
+%define parse.assert
 
-    // int yylex();
-    // int yyerror(char *s);
+%code requires{
+    #include <stdio.h>
 
     #include "../../../include/sql/Query.h"
     #include <list>
     #include <vector>
 
     using namespace std;
+    class Driver;
+    class TypeName;
+    class Node;
 
-    #define YYSTYPE int
-    extern YYSTYPE yyltype
+}
 
-%}
+%param { Driver& drv }
+%locations
 
-// %union {
-//     Expression exp;
-// }
+%code {
+    #include "../Driver.hh"
+}
 
-// %token UNKNOWN
-// %token <i_type> NUMBER
-// %token <c_type> ; ( ) ,
-// %token <s_type> SELECT CREATE DATABASE column_name from table_name TABLE AND OR VARCHAR
-// %token SELECT CREATE DATABASE column_name FROM table_name TABLE AND OR VARCHAR
+%define parse.trace
+%define parse.error detailed
+%define parse.lac full
+%define api.token.prefix {TOK_}
 
-//%token SEMICOLON SELECT L_PAR CREATE R_PAR DATABASE TABLE COMMA INT VARCHAR STRING NUM EVERYTHING
+%nterm <Node*> stmt CreateStmt columnDef
 
-//%type <name> STRING qualified_name
-//%type <number> NUM
+%nterm <std::list<Node*>*> TableElement TableElementList OptTableElementList
 
-%type <node> stmts stmt CreateStmt columnDef
+%token <std::string> ColId IDENTIFIER "identifier"
+%nterm <TypeName*> SimpleTypename Numeric CharacterWithLength Character
+%token <int> NUM "number"
 
-%type <listnodes> TableElement TableElementList OptTableElementList
+%token CREATE VARCHAR TABLE INT
 
-%type <str> ColId IDENT STRING
-%type <keyword> col_name_keyword
-%type <theTypeName> SimpleTypename Numeric CharacterWithLength Character
-%type <ival> NUM
-
-%token CREATE VARCHAR IDENT TABLE INT STRING NUM
-
-//%union{
-//	char		*str;
-//    	class Node* node;
-//    	const char* keyword;
-//    	class TypeName* theTypeName;
-//    	int		ival;
-//    	vector<Node>* listnodes;
-//}
-
-//%parse-param {core_yyscan_t yyscanner}
-
-// SELECT:
-//     EVERYTHING {
-
-//     }
-//     | select_col {
-
-//     }
-
-// select_col:
-//     STRING COMMA {
-
-//     }
-//     | STRING
-
-// declare_col:
-//     type_col STRING COMMA declare_col{
-//         printf("\n Column name %s", $2);
-//     }
-//     | type_col STRING {
-//         printf("\n Column name %s", $2);
-//     }
+%token LPAREN "("
+        RPAREN ")"
+        SEMI ";"
+        COMMA ","
+        CREATE "CREATE"
+        VARCHAR "VARCHAR"
+        TABLE "TABLE"
+        INT "INT"
 
 %%
 
-//prog:
-//    stmts
-//;
-/* for now only accept one statment */
-stmts: stmts ';' stmt
-    | stmt
+%start startPt;
+
+startPt:
+        %empty  {}
+        | stmts
+        ;
+
+stmts: stmt ";"
     {
-	if ($1 != NULL)
-		$$ = $1;
-	else
-		$$ = NULL;
+        drv.res = 1;
+        drv.result = $1;
     }
+    ;
 
 stmt:
     CreateStmt
     ;
 
-CreateStmt: CREATE TABLE STRING '(' OptTableElementList ')'
+CreateStmt: "CREATE" "TABLE" "identifier" "(" OptTableElementList ")"
 		{
 			CreateStmt* createStmt = new CreateStmt(T_CreateStmt);
 			createStmt->setTableElementsList($5);
+			createStmt->setTableName($3);
 
 			$$ = (Node *)createStmt;
 		}
 		;
 
+
+// TODO: add empty rule
 OptTableElementList:
-	TableElementList { $$ = $1}
-	|	/*EMPTY*/ { $$ = NULL; }
+	TableElementList { $$ = $1; }
+	;
 
 TableElementList:
 		TableElement
 			{
 				$$ = $1;
 			}
-		| TableElementList ',' TableElement
+		| TableElementList "," TableElement
 			{
-				std::list<Node>* listWithAll = $1;
-				std::list<Node>* otherList = $3;
-				std::list<Node> listWithAllPtr = *otherList;
+				std::list<Node*>* listWithAll = $1;
+				std::list<Node*>* otherList = $3;
+				std::list<Node*> listWithAllPtr = *otherList;
 				for (const auto& item : listWithAllPtr) {
 					listWithAll->push_back(item);
 				}
@@ -133,39 +108,30 @@ TableElementList:
 //
 TableElement:
 	columnDef {
-		std::list<Node>* listPtr = new std::list<Node>;
+		std::list<Node*>* listPtr = new std::list<Node*>();
 		listPtr->push_back($1);
 		$$ = listPtr;
 	}
+	;
 
 // TODO: fill out class with results
-columnDef: ColId SimpleTypename{
+// TODO: need to redo the identifer
+columnDef: "identifier" SimpleTypename {
 			ColumnDef* col = new ColumnDef(T_ColumnDef);
+			col->setColName($1);
+			col->setType($2);
 			$$ = (Node *)col;
 		}
 	;
 
-// create a custome function to do lookup
-ColId:
-	STRING {		printf($1);
-               			$$ = NULL;}
-//	col_name_keyword {
-//			printf($1);
-//			$$ = NULL;
-//			}
-//	;
-
-col_name_keyword:
-	VARCHAR
-	| INT
-;
-
 SimpleTypename:
-	Character { $$ = $1; }
-	| Numeric { $$ = $1; }
+    Numeric { $$ = $1; }
+	| Character { $$ = $1; }
+	;
 
 Numeric:
-	INT { $$ = new TypeName(T_INT); }
+	"INT" { $$ = new TypeName(T_INT); }
+	;
 
 Character: CharacterWithLength {
 		$$ = $1;
@@ -173,52 +139,16 @@ Character: CharacterWithLength {
 	;
 
 // TODO: get value of constant
-CharacterWithLength:  VARCHAR '(' NUM ')'
+CharacterWithLength:  "VARCHAR" "(" "number" ")"
 				{
 					VarCharTypeName* typeName = new VarCharTypeName(T_VARCHAR);
 					$$ = (TypeName*)typeName;
 				}
-		;
-
-
-//create_table_exp:
-//    declare_col {
-//
-//    }
-//
-//declare_col:
-//    type_col STRING COMMA declare_col{
-//    query.createTableStmt.columns.insert(std::pair<string,ColumnTypes>($2, $1));
-////    colNameCache = $2;
-////	if (cache == INT_TYPE) {
-////		query.createTableStmt.columns.insert(pair<string,ColumnTypes>($2,INT_TYPE));
-////	} else if (cache == VARCHAR_TYPE) {
-////		query.createTableStmt.columns.insert(pair<string,ColumnTypes>($2,VARCHAR_TYPE));
-////	}
-//    }
-//    | type_col STRING {
-////    string name = $2;
-//    	query.createTableStmt.columns.insert(std::pair<string,ColumnTypes>($2, $1));
-//    	mymap.insert ( std::pair<char,int>('a',100) );
-////    	colNameCache = $2;
-////    	if (cache == INT_TYPE) {
-////    		query.createTableStmt.columns.insert(pair<string,ColumnTypes>($2,INT_TYPE));
-////    	} else if (cache == VARCHAR_TYPE) {
-////		query.createTableStmt.columns.insert(pair<string,ColumnTypes>($2,VARCHAR_TYPE));
-////    	}
-//    }
-//
-//type_col:
-//    INT {
-//    $$ = INT_TYPE;
-////    query.createTableStmt.columnTypes.push_back (INT_TYPE);
-////        query.createTableStmt.columns.insert(pair<string,ColumnTypes>(colNameCache,INT_TYPE));
-//    }
-//    |
-//    VARCHAR L_PAR NUM R_PAR{
-//    $$ = VARCHAR_TYPE;
-////    	query.createTableStmt.columnTypes.push_back (VARCHAR_TYPE);
-////    	query.createTableStmt.columns.insert(pair<string,ColumnTypes>(colNameCache,VARCHAR_TYPE));
-//    }
-
+				;
 %%
+
+void
+yy::parser::error (const location_type& l, const std::string& m)
+{
+  std::cerr << l << ": " << m << '\n';
+}

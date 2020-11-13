@@ -1,14 +1,17 @@
 #include <iostream>
 #include "include/sql/Query.h"
-#include "src//sql/Driver.hh"
-
-//extern void scan_string(const char* str);
-////extern QueryStmt return_ob();
-//extern int yyparse (void);
+#include "src/sql/Driver.hh"
 
 int main() {
     int res = 0;
     Driver drv;
-    drv.parse("/Users/Brett/Desktop/Programming/BRADY_SQL/new.txt");
+    drv.parse("CREATE TABLE apple ( hi INT );");
+    Node* result = drv.result;
+    CreateStmt* createNode = NULL;
+    switch (result->getNodeTag()) {
+        case T_CreateStmt:
+            createNode = (CreateStmt*)result;
+            break;
+    }
     return 0;
 }

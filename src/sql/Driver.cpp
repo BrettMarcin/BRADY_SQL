@@ -10,12 +10,11 @@ Driver::Driver() {
 }
 
 int
-Driver::parse (const std::string &f)
+Driver::parse (char* stringInput)
 {
-    file = f;
-    location.initialize (&file);
+    this->stringInput = stringInput;
     scan_begin ();
     yy::parser parse (*this);
-    int res = parse ();
+    int res = parse();
     return res;
 }

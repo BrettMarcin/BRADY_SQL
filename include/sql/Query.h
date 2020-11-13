@@ -34,10 +34,13 @@ class Node {
         NodeTag getNodeTag() {
             return type;
         }
+        void setNodeTag() {
+            this-> type;
+        }
         Node() {
 
         }
-    private:
+    protected:
         NodeTag type;
 };
 
@@ -46,18 +49,21 @@ class TypeName {
         TypeName() {
 
         }
-        TypeName(ColType type) {
-            this->type = type;
+        TypeName(ColType colType) {
+            this->colType = colType;
         }
 
-    private:
-        ColType type;
+    protected:
+        ColType colType;
 };
 
-class VarCharTypeName : TypeName {
-public:
-    VarCharTypeName(ColType type) : TypeName(type) {}
-    private:
+class VarCharTypeName : public TypeName {
+    public:
+        VarCharTypeName(ColType type) : TypeName(type) {}
+        void setLength(int length) {
+            this->length;
+        }
+    protected:
         int length;
 };
 
@@ -70,24 +76,33 @@ public:
 //        Node	        *whereClause;
 //};
 
-class ColumnDef : Node {
+class ColumnDef : public Node {
     public:
         ColumnDef(NodeTag theTag) : Node(theTag){}
-    private:
+        void setColName(string colName) {
+            this->colName = colName;
+        }
+        void setType(TypeName* type) {
+            this->type = type;
+        }
+    protected:
         string colName;
-        TypeName type;
+        TypeName* type;
 //    Oid			collOid;
 };
 
-class CreateStmt : Node {
+class CreateStmt : public Node {
     public:
         CreateStmt(NodeTag theTag) : Node(theTag){}
-        void setTableElementsList(list<Node>* tableElementsList) {
+        void setTableElementsList(list<Node*>* tableElementsList) {
             this->tableElementsList = tableElementsList;
         }
-    private:
+        void setTableName(string tableName) {
+            this->tableName =  tableName;
+        }
+    protected:
         string tableName;
-        list<Node>* tableElementsList;
+        list<Node*>* tableElementsList;
 };
 
 
