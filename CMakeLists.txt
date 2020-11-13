@@ -15,14 +15,16 @@ file(
 )
 
 FIND_PACKAGE(BISON REQUIRED)
+set(BISON_EXECUTABLE /usr/local/opt/bison/bin/bison)
+
 SET(BisonOutput ${CMAKE_SOURCE_DIR}/src/sql/build_files/parser.cpp)
 IF(BISON_FOUND)
     ADD_CUSTOM_COMMAND(
             OUTPUT ${BisonOutput}
             COMMAND ${BISON_EXECUTABLE}
-            --defines=${CMAKE_SOURCE_DIR}/src/sql/build_files/tokens.h
+            --defines=${CMAKE_SOURCE_DIR}/src/sql/build_files/parser.hh
             --output=${BisonOutput}
-            ${CMAKE_SOURCE_DIR}/src/sql/parser.y
+            ${CMAKE_SOURCE_DIR}/src/sql/parser.yy
             COMMENT "Generating parser.cpp"
     )
 ENDIF()
@@ -34,7 +36,7 @@ IF(FLEX_FOUND)
             OUTPUT ${FlexOutput}
             COMMAND ${FLEX_EXECUTABLE}
             --outfile=${FlexOutput}
-            ${CMAKE_SOURCE_DIR}/src/sql/scanner.l
+            ${CMAKE_SOURCE_DIR}/src/sql/scanner.ll
             COMMENT "Generating scanner.cpp"
     )
 ENDIF()
@@ -45,7 +47,7 @@ target_include_directories(MyLib
         "include/"
         )
 
-add_executable(test_bison main.cpp)
+add_executable(test_bison main.cpp src/sql/Driver.cpp)
 
 target_link_libraries(test_bison MyLib)
 
