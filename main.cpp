@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sql/SelectStmt.h>
+#include <InsertStmt.h>
 #include "src/include/Query.h"
 #include "src/include/sql/Driver.hh"
 
@@ -8,13 +9,14 @@ void checkOutputOfParse(Node* result);
 int main() {
     int res = 0;
     Driver drv;
-//    drv.parse("CREATE TABLE apple ( hi INT );");
-//    Node* result = drv.result;
-//    checkOutputOfParse(result);
+    drv.parse("INSERT INTO theTable a = 1, ab = 'theString';");
 
-    drv.parse("SELECT * FROM hello WHERE A == B AND C > D;");
-    Node* result = drv.result;
-    checkOutputOfParse(result);
+    if (drv.res == 1) {
+        Node* result = drv.result;
+        checkOutputOfParse(result);
+    } else {
+        cout << "Failed to Parse String" << endl;
+    }
 
     return 0;
 }
@@ -22,6 +24,7 @@ int main() {
 void checkOutputOfParse(Node* result) {
     CreateTableStmt* createNode = NULL;
     SelectStmt* selectNode = NULL;
+    InsertStmt* insertNode = NULL;
 
     switch (result->getNodeTag()) {
         case T_CreateTableStmt:
@@ -30,6 +33,9 @@ void checkOutputOfParse(Node* result) {
 
         case T_SelectStmt:
             selectNode = (SelectStmt*)result;
+            break;
+        case T_InsertStmt:
+            insertNode = (InsertStmt*)result;
             break;
     }
 }

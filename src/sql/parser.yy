@@ -14,6 +14,7 @@
     #include <vector>
     #include "../../include/NodeTree.h"
     #include "../../include/CompareOpt.h"
+    #include "../../include/InsertStmt.h"
     #include "../../include/sql/SelectStmt.h"
     #include "../../include/sql/Enums.h"
 
@@ -23,6 +24,9 @@
     class Node;
     class NodeTree;
     class CompareOpt;
+    class GenericType;
+    class InsertColumn;
+    class InsertStmt;
 
 }
 
@@ -38,7 +42,7 @@
 %define parse.lac full
 %define api.token.prefix {TOK_}
 
-%nterm <Node*> stmt CreateStmt columnDef CreateTable CreateDatabase query_specification query_expression select_stmt select_item_list_opt
+%nterm <Node*> stmt CreateStmt columnDef CreateTable CreateDatabase query_specification query_expression select_stmt select_item_list_opt insert_stmt
 
 %nterm <std::list<Node*>*> TableElement TableElementList OptTableElementList
 
@@ -49,12 +53,15 @@
 %nterm <NodeTree*> expr where_clause opt_where_clause
 %nterm <std::list<std::string>*> select_item select_item_list
 %nterm <std::string> from_clause
+%nterm <GenericType*> optionalType
+%nterm <list<InsertColumn*>*> update_elem update_list
 
 %token LPAREN "("
         RPAREN ")"
         SEMI ";"
         COMMA ","
         STAR "*"
+        APOS "'"
         CREATE "CREATE"
         VARCHAR "VARCHAR"
         TABLE "TABLE"
@@ -71,10 +78,14 @@
         LE "<"
         GE_EQ ">="
         LE_EQ "<="
+        SET_EQ "="
         IS "IS"
         FALSE "FALSE"
         TRUE "TRUE"
         NOT "NOT"
+        INSERT "INSERT"
+        INTO "INTO"
+        SET "SET"
 
 %%
 
@@ -96,6 +107,7 @@ stmt:
     CreateTable
     | CreateDatabase
     | select_stmt
+    | insert_stmt
     ;
 
 CreateTable: "CREATE" "TABLE" "identifier" "(" OptTableElementList ")"
@@ -122,6 +134,52 @@ select_stmt:
             $$ = $1;
         }
         ;
+
+insert_stmt:
+        "INSERT" "INTO" "identifier" update_list {
+            InsertStmt* node = new InsertStmt(T_InsertStmt, $3, $4);
+            $$ = (Node*)node;
+        }
+        ;
+
+update_list:
+        update_list "," update_elem {
+            std::list<InsertColumn*>* listWithAll = $1;
+            std::list<InsertColumn*>* otherList = $3;
+            std::list<InsertColumn*> listWithAllPtr = *otherList;
+            for (const auto& item : listWithAllPtr) {
+                listWithAll->push_back(item);
+            }
+            $$ = listWithAll;
+        }
+        | update_elem {
+           $$ = $1;
+        }
+        ;
+
+// TODO: need to make expression
+update_elem: "identifier" "=" optionalType
+            {
+                InsertColumn* col = new InsertColumn($1, $3);
+                list<InsertColumn*>* theList = new list<InsertColumn*>();
+                theList->push_back(col);
+
+                $$ = theList;
+            }
+            ;
+
+optionalType:
+            "number" {
+                GenericType* theType = new GenericType(T_NUMBER);
+                theType->setIntValue($1);
+                $$ = theType;
+            }
+            | "'" "identifier" "'"{
+                GenericType* theType = new GenericType(T_STRING);
+                theType->setStringValue($2);
+                $$ = theType;
+            }
+            ;
 
 query_expression:
                 query_specification {

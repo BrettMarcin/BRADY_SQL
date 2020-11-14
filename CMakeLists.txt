@@ -47,7 +47,7 @@ target_include_directories(MyLib
         "src/include"
         )
 
-add_executable(test_bison main.cpp src/sql/Driver.cpp src/NodeTree.cpp src/CompareOpt.cpp src/SelectStmt.cpp)
+add_executable(test_bison main.cpp src/sql/Driver.cpp src/NodeTree.cpp src/CompareOpt.cpp src/SelectStmt.cpp src/InsertStmt.cpp)
 target_include_directories(test_bison
         PUBLIC
         "src/include"
