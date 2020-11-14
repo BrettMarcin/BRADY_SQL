@@ -2,11 +2,13 @@
     #include <stdio.h>
     #include <string.h>
     #include "parser.hh"
-    #include "../../../include/sql/Query.h"
+    #include "../../include/Query.h"
     #include <list>
     #include <vector>
 
-    #include "../Driver.hh"
+    #include "../../include/sql/Driver.hh"
+    #include "../../include/NodeTree.h"
+    #include "../../include/CompareOpt.h"
 %}
 
 %option noyywrap
@@ -41,10 +43,27 @@ alpha       ([a-zA-Z])+
 ")" return yy::parser::make_RPAREN(loc);
 ";" return yy::parser::make_SEMI(loc);
 "," return yy::parser::make_COMMA(loc);
+"*" return yy::parser::make_STAR(loc);
 "CREATE" return yy::parser::make_CREATE(loc);
 "VARCHAR" return yy::parser::make_VARCHAR(loc);
 "INT" return yy::parser::make_INT(loc);
 "TABLE" return yy::parser::make_TABLE(loc);
+"DATABASE" return yy::parser::make_DATABASE(loc);
+"SELECT" return yy::parser::make_SELECT(loc);
+"FROM" return yy::parser::make_FROM(loc);
+"WHERE" return yy::parser::make_WHERE(loc);
+"AND" return yy::parser::make_AND(loc);
+"OR" return yy::parser::make_OR(loc);
+"==" return yy::parser::make_EQ(loc);
+"!=" return yy::parser::make_N_EQ(loc);
+">" return yy::parser::make_GE(loc);
+"<" return yy::parser::make_LE(loc);
+">=" return yy::parser::make_GE_EQ(loc);
+"<=" return yy::parser::make_LE_EQ(loc);
+"IS" return yy::parser::make_IS(loc);
+"FALSE" return yy::parser::make_FALSE(loc);
+"TRUE" return yy::parser::make_TRUE(loc);
+"NOT" return yy::parser::make_NOT(loc);
 {int} return make_NUM(yytext, loc);
 {alpha} return yy::parser::make_IDENTIFIER(yytext, loc);
 <<EOF>>    return yy::parser::make_YYEOF (loc);

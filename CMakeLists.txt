@@ -44,10 +44,14 @@ ENDIF()
 ADD_LIBRARY(MyLib ${BisonOutput} ${FlexOutput})
 target_include_directories(MyLib
         PUBLIC
-        "include/"
+        "src/include"
         )
 
-add_executable(test_bison main.cpp src/sql/Driver.cpp)
+add_executable(test_bison main.cpp src/sql/Driver.cpp src/NodeTree.cpp src/CompareOpt.cpp src/SelectStmt.cpp)
+target_include_directories(test_bison
+        PUBLIC
+        "src/include"
+        )
 
 target_link_libraries(test_bison MyLib)
 

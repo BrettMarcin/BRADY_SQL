@@ -9,14 +9,20 @@
 %code requires{
     #include <stdio.h>
 
-    #include "../../../include/sql/Query.h"
+    #include "../../include/Query.h"
     #include <list>
     #include <vector>
+    #include "../../include/NodeTree.h"
+    #include "../../include/CompareOpt.h"
+    #include "../../include/sql/SelectStmt.h"
+    #include "../../include/sql/Enums.h"
 
     using namespace std;
     class Driver;
     class TypeName;
     class Node;
+    class NodeTree;
+    class CompareOpt;
 
 }
 
@@ -24,7 +30,7 @@
 %locations
 
 %code {
-    #include "../Driver.hh"
+    #include "../../include/sql/Driver.hh"
 }
 
 %define parse.trace
@@ -32,24 +38,43 @@
 %define parse.lac full
 %define api.token.prefix {TOK_}
 
-%nterm <Node*> stmt CreateStmt columnDef
+%nterm <Node*> stmt CreateStmt columnDef CreateTable CreateDatabase query_specification query_expression select_stmt select_item_list_opt
 
 %nterm <std::list<Node*>*> TableElement TableElementList OptTableElementList
 
 %token <std::string> ColId IDENTIFIER "identifier"
 %nterm <TypeName*> SimpleTypename Numeric CharacterWithLength Character
 %token <int> NUM "number"
-
-%token CREATE VARCHAR TABLE INT
+%nterm <CompareOpt*> comp_op
+%nterm <NodeTree*> expr where_clause opt_where_clause
+%nterm <std::list<std::string>*> select_item select_item_list
+%nterm <std::string> from_clause
 
 %token LPAREN "("
         RPAREN ")"
         SEMI ";"
         COMMA ","
+        STAR "*"
         CREATE "CREATE"
         VARCHAR "VARCHAR"
         TABLE "TABLE"
         INT "INT"
+        DATABASE "DATABASE"
+        SELECT "SELECT"
+        FROM "FROM"
+        WHERE "WHERE"
+        AND "AND"
+        OR "OR"
+        EQ "=="
+        N_EQ "!="
+        GE ">"
+        LE "<"
+        GE_EQ ">="
+        LE_EQ "<="
+        IS "IS"
+        FALSE "FALSE"
+        TRUE "TRUE"
+        NOT "NOT"
 
 %%
 
@@ -68,12 +93,14 @@ stmts: stmt ";"
     ;
 
 stmt:
-    CreateStmt
+    CreateTable
+    | CreateDatabase
+    | select_stmt
     ;
 
-CreateStmt: "CREATE" "TABLE" "identifier" "(" OptTableElementList ")"
+CreateTable: "CREATE" "TABLE" "identifier" "(" OptTableElementList ")"
 		{
-			CreateStmt* createStmt = new CreateStmt(T_CreateStmt);
+			CreateTableStmt* createStmt = new CreateTableStmt(T_CreateTableStmt);
 			createStmt->setTableElementsList($5);
 			createStmt->setTableName($3);
 
@@ -81,6 +108,165 @@ CreateStmt: "CREATE" "TABLE" "identifier" "(" OptTableElementList ")"
 		}
 		;
 
+CreateDatabase: "CREATE" "DATABASE" "identifier"
+                {
+                    CreateDatabaseStmt* database = new CreateDatabaseStmt(T_DatabaseStmt);
+                    database->setDatabaseName($3);
+                    $$ = (Node *)database;
+                }
+                ;
+
+// TODO: with parens
+select_stmt:
+        query_expression {
+            $$ = $1;
+        }
+        ;
+
+query_expression:
+                query_specification {
+                    $$ = $1;
+                }
+                ;
+
+query_specification:
+                "SELECT" select_item_list_opt from_clause opt_where_clause {
+                    SelectStmt* selectSmt = (SelectStmt*)$2;
+                    selectSmt->setFromClause($3);
+                    selectSmt->setNodeTree($4);
+                    $$ = (Node*)selectSmt;
+                }
+                ;
+
+select_item_list_opt:
+            "*" {
+                SelectStmt* theNode = new SelectStmt(T_SelectStmt);
+                theNode->setSelectAll(true);
+                $$ = (Node*)theNode;
+            }
+            | select_item_list {
+                SelectStmt* theNode = new SelectStmt(T_SelectStmt);
+                theNode->setTargetList($1);
+                $$ = (Node*)theNode;
+            }
+            ;
+
+select_item_list:
+            select_item {
+                $$ = $1;
+            }
+            | select_item_list "," select_item {
+                std::list<std::string>* listWithAll = $1;
+                std::list<std::string>* otherList = $3;
+                std::list<std::string> listWithAllPtr = *otherList;
+                  for (const auto& item : listWithAllPtr) {
+                      listWithAll->push_back(item);
+                  }
+                  $$ = listWithAll;
+            }
+            ;
+
+// TODO: add for alias'
+select_item:
+        "identifier" {
+            list<std::string>* theList = new list<std::string>();
+            theList->push_back($1);
+            $$ = theList;
+        }
+        ;
+
+
+
+from_clause: "FROM" "identifier" {
+                $$ = $2;
+            }
+            ;
+
+opt_where_clause:
+            %empty { $$ = nullptr; }
+            | where_clause
+            ;
+
+where_clause:
+            "WHERE" expr { $$ = $2; }
+            ;
+
+expr:
+            expr "OR" expr {
+                CompareOpt* opt = new CompareOpt(T_OR);
+                NodeTree* node = new NodeTree(opt);
+                NodeTree* left = (NodeTree*)$1;
+                NodeTree* right = (NodeTree*)$3;
+                node->setLeft(left);
+                node->setRight(right);
+                $$ = node;
+            }
+            | expr "AND" expr {
+                CompareOpt* opt = new CompareOpt(T_AND);
+                NodeTree* node = new NodeTree(opt);
+                NodeTree* left = (NodeTree*)$1;
+                NodeTree* right = (NodeTree*)$3;
+                node->setLeft(left);
+                node->setRight(right);
+                $$ = node;
+            }
+            | "NOT" expr {
+                CompareOpt* opt = new CompareOpt(T_NOT);
+                NodeTree* node = new NodeTree(opt);
+
+
+                node->setRight($2);
+                node->setLeft(NULL);
+                $$ = node;
+            }
+            | expr comp_op expr {
+                NodeTree* node = new NodeTree($2);
+                NodeTree* left = (NodeTree*)$1;
+                NodeTree* right = (NodeTree*)$3;
+                node->setLeft(left);
+                node->setRight(right);
+                $$ = node;
+            }
+            | expr "IS" "TRUE" {
+                CompareOpt* opt = new CompareOpt(T_IS);
+                CompareOpt* opt2 = new CompareOpt(T_IDENTIFIER);
+                opt2->setTheId("TRUE");
+                opt->setBool(true);
+                NodeTree* node = new NodeTree(opt);
+                NodeTree* rightNode = new NodeTree(opt);
+                node->setRight(rightNode);
+                node->setLeft($1);
+                $$ = node;
+            }
+            | expr "IS" "FALSE"{
+                CompareOpt* opt = new CompareOpt(T_IS);
+                CompareOpt* opt2 = new CompareOpt(T_IDENTIFIER);
+                opt2->setTheId("FALSE");
+                opt->setBool(false);
+                NodeTree* node = new NodeTree(opt);
+                NodeTree* right = new NodeTree(opt);
+                node->setRight(right);
+                node->setLeft($1);
+                $$ = node;
+            }
+            |
+
+            | "identifier" {
+                CompareOpt* opt = new CompareOpt(T_IDENTIFIER);
+                opt->setTheId($1);
+                NodeTree* node = new NodeTree(opt);
+                $$ = node;
+            }
+            ;
+
+comp_op:
+          "=="     { $$ = new CompareOpt(T_EQ); }
+        | "!=" { $$ = new CompareOpt(T_N_EQ); }
+        | ">"     { $$ = new CompareOpt(T_GE); }
+        | "<" { $$ = new CompareOpt(T_LE); }
+        | ">="     { $$ = new CompareOpt(T_LE_EQ); }
+        | "<="     { $$ = new CompareOpt(T_GE_EQ); }
+        ;
 
 // TODO: add empty rule
 OptTableElementList:

@@ -7,6 +7,7 @@
 #include "build_files/parser.hh"
 #include "build_files/location.hh"
 #include <list>
+#include "Enums.h"
 
 using namespace yy;
 
