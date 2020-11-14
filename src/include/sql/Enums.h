@@ -11,6 +11,7 @@ typedef enum NodeTag
     T_SelectStmt,
     T_CreateTableStmt,
     T_DatabaseStmt,
+    T_InsertStmt,
     T_ColumnDef
 };
 
@@ -33,6 +34,11 @@ typedef enum CompareOperation
     T_AND,
     T_NOT,
     T_OR
+};
+
+typedef enum Generic{
+    T_STRING,
+    T_NUMBER
 };
 
 #endif //TEST_BISON_ENUMS_H

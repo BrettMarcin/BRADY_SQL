@@ -94,4 +94,35 @@ class CreateTableStmt : public Node {
         list<Node*>* tableElementsList;
 };
 
+class GenericType {
+    public:
+        GenericType(Generic theType) {
+            this->theType = theType;
+        }
+        void setIntValue(int intValue) {
+            this->intValue = intValue;
+        }
+        void setStringValue(string stringValue) {
+            this->stringValue = stringValue;
+        }
+    protected:
+        Generic theType;
+        int intValue;
+        string stringValue;
+};
+
+class InsertColumn {
+    public:
+        InsertColumn() {
+            newValue = NULL;
+        }
+        InsertColumn(string colName, GenericType* newValue) {
+            this->colName = colName;
+            this->newValue = newValue;
+        }
+    protected:
+        string colName;
+        GenericType* newValue;
+};
+
 #endif TEST_BISON_QUERY_H

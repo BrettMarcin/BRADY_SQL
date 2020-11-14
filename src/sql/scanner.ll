@@ -44,6 +44,7 @@ alpha       ([a-zA-Z])+
 ";" return yy::parser::make_SEMI(loc);
 "," return yy::parser::make_COMMA(loc);
 "*" return yy::parser::make_STAR(loc);
+"'" return yy::parser::make_APOS(loc);
 "CREATE" return yy::parser::make_CREATE(loc);
 "VARCHAR" return yy::parser::make_VARCHAR(loc);
 "INT" return yy::parser::make_INT(loc);
@@ -54,6 +55,10 @@ alpha       ([a-zA-Z])+
 "WHERE" return yy::parser::make_WHERE(loc);
 "AND" return yy::parser::make_AND(loc);
 "OR" return yy::parser::make_OR(loc);
+"INSERT" return yy::parser::make_INSERT(loc);
+"INTO" return yy::parser::make_INTO(loc);
+"SET" return yy::parser::make_SET(loc);
+"=" return yy::parser::make_SET_EQ(loc);
 "==" return yy::parser::make_EQ(loc);
 "!=" return yy::parser::make_N_EQ(loc);
 ">" return yy::parser::make_GE(loc);
