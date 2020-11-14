@@ -1,32 +1,35 @@
 #include <iostream>
-#include "include/sql/Query.h"
+#include <sql/SelectStmt.h>
+#include "src/include/Query.h"
+#include "src/include/sql/Driver.hh"
 
-extern void scan_string(const char* str);
-extern QueryStmt return_ob();
-extern int yyparse (void);
+void checkOutputOfParse(Node* result);
 
 int main() {
-//    std::cout << "Hello, World!" << std::endl;
-//    char string[] = "String to be parsed.";
-//    YY_BUFFER_STATE buffer = yy_scan_string(string);
-//    yyparse();
-    char command[] = "CREATE DATABASE a;";
-    scan_string(command);
-    int success = yyparse();
-    QueryStmt st = return_ob();
+    int res = 0;
+    Driver drv;
+//    drv.parse("CREATE TABLE apple ( hi INT );");
+//    Node* result = drv.result;
+//    checkOutputOfParse(result);
 
-    char command2[] = "CREATE TABLE b (INT a, INT b, VARCHAR(30) c );";
-    scan_string(command2);
-    yyparse();
-    QueryStmt st2 = return_ob();
-    if (st.queryCmd == CREATE_DATABASE_CMD) {
-        cout << "Create dataabse" << endl;
-    }
-    if (!success) {
-        cout << "Correct" << endl;
-        QueryStmt st = return_ob();
-    } else {
-        cout << "Failed" << endl;
-    }
+    drv.parse("SELECT * FROM hello WHERE A == B AND C > D;");
+    Node* result = drv.result;
+    checkOutputOfParse(result);
+
     return 0;
+}
+
+void checkOutputOfParse(Node* result) {
+    CreateTableStmt* createNode = NULL;
+    SelectStmt* selectNode = NULL;
+
+    switch (result->getNodeTag()) {
+        case T_CreateTableStmt:
+            createNode = (CreateTableStmt*)result;
+            break;
+
+        case T_SelectStmt:
+            selectNode = (SelectStmt*)result;
+            break;
+    }
 }
