@@ -3,9 +3,9 @@
 
 #include <map>
 #include <string>
-#include "../../include/sql/Query.h"
-#include "build_files/parser.hh"
-#include "build_files/location.hh"
+#include "../Query.h"
+#include "../../sql/build_files/parser.hh"
+#include "../../sql/build_files/location.hh"
 #include <list>
 #include "Enums.h"
 

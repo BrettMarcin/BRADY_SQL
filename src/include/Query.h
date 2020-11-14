@@ -9,8 +9,8 @@
 #include <list>
 #include <string>
 #include <vector>
-#include "../src/NodeTree.h"
-#include "../src/sql/Enums.h"
+#include "NodeTree.h"
+#include "sql/Enums.h"
 
 using namespace std;
 

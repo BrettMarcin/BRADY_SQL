@@ -5,7 +5,7 @@
 #ifndef TEST_BISON_SELECTSTMT_H
 #define TEST_BISON_SELECTSTMT_H
 
-#include "sql/Query.h"
+#include "../Query.h"
 
 class SelectStmt : public Node {
 public:

@@ -5,7 +5,7 @@
 #ifndef TEST_BISON_NODETREE_H
 #define TEST_BISON_NODETREE_H
 
-#include "../include/sql/Query.h"
+#include "Query.h"
 #include "CompareOpt.h"
 
 class NodeTree {
