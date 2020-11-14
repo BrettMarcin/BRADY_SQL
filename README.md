@@ -7,6 +7,7 @@ and construct the statement objects to be used
 
 Step 2: Storage, Buffer Pool Manager and other classes need to be written
 to allow pages to be swapped in and out of memory to on disk
+   - Will have to add support for DELETE from 
 
 Step 3: Support more types, currently only INT and VARCHAR are supported
 
